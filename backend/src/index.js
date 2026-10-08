@@ -1,24 +1,32 @@
+// Load .env before any other module reads process.env at import time.
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import dotenv from 'dotenv';
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-dotenv.config();
 
 // Initialize database (runs migrations on import)
 import './db.js';
 
+import { initAuth } from './middleware/auth.js';
 import authRoutes from './routes/auth.js';
 import notesRoutes from './routes/notes.js';
 import familyRoutes from './routes/family.js';
 
+initAuth();
+
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Behind a reverse proxy (Railway, Fly, nginx), set TRUST_PROXY to the number of
+// proxy hops so rate limits key on the real client IP. Leave unset otherwise.
+const trustProxyHops = Number(process.env.TRUST_PROXY);
+if (Number.isInteger(trustProxyHops) && trustProxyHops > 0) {
+  app.set('trust proxy', trustProxyHops);
+}
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
