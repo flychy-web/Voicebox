@@ -18,15 +18,28 @@ export function saveAudio(noteId, buffer, mimetype) {
   return filePath;
 }
 
-export function getAudioPath(relativePath) {
-  return path.resolve(relativePath);
+/**
+ * Resolve a stored audio path, refusing anything outside the audio directory.
+ */
+export function getAudioPath(storedPath) {
+  const root = path.resolve(AUDIO_DIR);
+  const resolved = path.resolve(storedPath);
+  if (!resolved.startsWith(root + path.sep)) {
+    throw new Error('Audio path is outside the audio directory');
+  }
+  return resolved;
 }
 
-export function audioExists(filePath) {
-  return fs.existsSync(filePath);
+export function audioExists(storedPath) {
+  try {
+    return fs.existsSync(getAudioPath(storedPath));
+  } catch {
+    return false;
+  }
 }
 
-export function deleteAudio(filePath) {
+export function deleteAudio(storedPath) {
+  const filePath = getAudioPath(storedPath);
   if (fs.existsSync(filePath)) {
     fs.unlinkSync(filePath);
   }
