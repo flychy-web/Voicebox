@@ -27,7 +27,7 @@ export async function processVoiceNote(noteId) {
       UPDATE voice_notes SET transcript = ?, duration_seconds = ? WHERE id = ?
     `).run(transcript, duration, noteId);
 
-    console.log(`[Processor] Transcribed: "${transcript.slice(0, 80)}..."`);
+    console.log(`[Processor] Transcribed note ${noteId}: ${transcript.length} chars, ${duration}s`);
 
     // Step 2: Summarize + categorize
     const { summary, category, urgency } = await summarize(transcript);
@@ -39,7 +39,7 @@ export async function processVoiceNote(noteId) {
       WHERE id = ?
     `).run(summary, category, urgency, noteId);
 
-    console.log(`[Processor] Done — ${category} / ${urgency}: "${summary.slice(0, 60)}..."`);
+    console.log(`[Processor] Done with note ${noteId}: ${category} / ${urgency}`);
 
   } catch (err) {
     console.error(`[Processor] Failed for note ${noteId}:`, err.message);
