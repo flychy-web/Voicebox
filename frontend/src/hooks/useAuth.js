@@ -1,10 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { login as apiLogin, logout as apiLogout, getStoredUser } from '../utils/api.js';
 
 export function useAuth() {
   const [user, setUser] = useState(() => getStoredUser());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const onUnauthorized = () => setUser(null);
+    window.addEventListener('voicebox:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('voicebox:unauthorized', onUnauthorized);
+  }, []);
 
   const login = useCallback(async (pin) => {
     setLoading(true);

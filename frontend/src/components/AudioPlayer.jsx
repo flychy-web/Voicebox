@@ -1,24 +1,43 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { fetchAudioUrl } from '../utils/api.js';
 
-export function AudioPlayer({ src }) {
+export function AudioPlayer({ noteId }) {
   const [playing, setPlaying] = useState(false);
+  const [src, setSrc] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   const audioRef = useRef(null);
 
-  const toggle = () => {
+  useEffect(() => () => {
+    if (src) URL.revokeObjectURL(src);
+  }, [src]);
+
+  const toggle = async () => {
     if (!audioRef.current) return;
     if (playing) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       setPlaying(false);
-    } else {
-      audioRef.current.play();
+      return;
+    }
+    try {
+      if (!src) {
+        const url = await fetchAudioUrl(noteId);
+        audioRef.current.src = url;
+        setSrc(url);
+      }
+      setLoadError(false);
+      await audioRef.current.play();
       setPlaying(true);
+    } catch {
+      setLoadError(true);
+      setPlaying(false);
     }
   };
 
   return (
     <div>
-      <audio ref={audioRef} src={src} onEnded={() => setPlaying(false)} preload="none" />
+      <audio ref={audioRef} onEnded={() => setPlaying(false)} preload="none" />
+      {loadError && <p role="alert">Could not play this recording. Please try again.</p>}
       <button
         onClick={toggle}
         style={{...styles.button, ...(playing ? styles.playing : {})}}

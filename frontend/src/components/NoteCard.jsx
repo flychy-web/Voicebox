@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { AudioPlayer } from './AudioPlayer.jsx';
-import { getAudioUrl } from '../utils/api.js';
 
 export function NoteCard({ note }) {
   const [expanded, setExpanded] = useState(false);
@@ -43,7 +42,7 @@ export function NoteCard({ note }) {
             </>
           )}
           <div style={{ marginTop: 'var(--space-sm)' }}>
-            <AudioPlayer src={getAudioUrl(note.id)} />
+            <AudioPlayer noteId={note.id} />
           </div>
         </div>
       )}

@@ -35,7 +35,7 @@
 | Database | SQLite (better-sqlite3) |
 | Transcription | OpenAI Whisper API |
 | Summarization | Claude API (Anthropic) |
-| Auth | PIN-based (HMAC tokens) |
+| Auth | PIN-based (keyed PIN hashes, expiring HMAC tokens, rate limited) |
 | Storage | Local disk (MVP) |
 
 ## Setup
@@ -51,7 +51,7 @@
 ```bash
 # Backend
 cd backend
-cp .env.example .env    # Fill in API keys
+cp .env.example .env    # Fill in API keys and AUTH_SECRET
 npm install
 npm run dev
 
@@ -78,6 +78,16 @@ curl -X POST http://localhost:3001/api/family \
 ```
 
 Then log in with PIN `1234` (senior recorder) or `5678` (family feed).
+
+## Security Notes
+
+- `AUTH_SECRET` signs login tokens and keys the PIN hashes. The server refuses to start in production without a strong one. Generate it with `openssl rand -hex 32`.
+- PINs are stored as keyed HMAC hashes, never in plaintext. Existing plaintext PINs are converted on startup.
+- Login tokens expire after `TOKEN_TTL_DAYS` (default 30). The app returns to the PIN screen when a token expires.
+- Login and family creation are rate limited per IP, with a global ceiling. Set `TRUST_PROXY` to the number of proxy hops when running behind a reverse proxy so limits apply per client.
+- PINs double as login identifiers, so two families can never share a code. Rate limiting bounds how fast anyone can probe for codes in use; longer PINs (up to 8 digits) make probing slower still.
+- Logs record note IDs, lengths, and categories, never transcript or summary text.
+- Deleting a note deletes its audio file.
 
 ## Project Structure
 

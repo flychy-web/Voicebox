@@ -9,6 +9,14 @@ function authHeaders() {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
+// Signals an expired or revoked session so useAuth can return to the login screen.
+function handleUnauthorized(res) {
+  if (res.status === 401 && getToken()) {
+    logout();
+    window.dispatchEvent(new Event('voicebox:unauthorized'));
+  }
+}
+
 async function request(path, options = {}) {
   const res = await fetch(`${API_BASE}${path}`, {
     ...options,
@@ -19,6 +27,7 @@ async function request(path, options = {}) {
   });
 
   if (!res.ok) {
+    handleUnauthorized(res);
     const body = await res.json().catch(() => ({}));
     const err = new Error(body.error || `Request failed (${res.status})`);
     err.status = res.status;
@@ -76,6 +85,7 @@ export async function uploadVoiceNote(audioBlob) {
   });
 
   if (!res.ok) {
+    handleUnauthorized(res);
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || 'Upload failed');
   }
@@ -92,9 +102,18 @@ export async function getNote(noteId) {
   return request(`/notes/${noteId}`);
 }
 
-export function getAudioUrl(noteId) {
-  const token = getToken();
-  return `${API_BASE}/notes/${noteId}/audio?token=${encodeURIComponent(token || '')}`;
+/**
+ * Fetch a note's audio with the Authorization header and return an object URL.
+ * The token stays out of the URL, so it never lands in server logs or history.
+ * Callers should URL.revokeObjectURL() the result when done.
+ */
+export async function fetchAudioUrl(noteId) {
+  const res = await fetch(`${API_BASE}/notes/${noteId}/audio`, { headers: authHeaders() });
+  if (!res.ok) {
+    handleUnauthorized(res);
+    throw new Error('Could not load audio');
+  }
+  return URL.createObjectURL(await res.blob());
 }
 
 export async function deleteNote(noteId) {

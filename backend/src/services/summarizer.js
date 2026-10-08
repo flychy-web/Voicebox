@@ -58,7 +58,7 @@ export async function summarize(transcript) {
         ? result.urgency : 'normal',
     };
   } catch (err) {
-    console.error('[Summarizer] Failed to parse Claude response:', text);
+    console.error(`[Summarizer] Failed to parse Claude response (${text.length} chars): ${err.message}`);
     return {
       summary: text.slice(0, 200),
       category: 'general',

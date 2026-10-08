@@ -3,7 +3,7 @@ import multer from 'multer';
 import { v4 as uuid } from 'uuid';
 import db from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { saveAudio, audioExists, getAudioPath } from '../services/storage.js';
+import { saveAudio, audioExists, getAudioPath, deleteAudio } from '../services/storage.js';
 import { processVoiceNote } from '../services/processor.js';
 
 const router = Router();
@@ -117,6 +117,13 @@ router.delete('/:id', requireAuth, (req, res) => {
   }
 
   db.prepare('DELETE FROM voice_notes WHERE id = ?').run(req.params.id);
+
+  try {
+    deleteAudio(note.audio_path);
+  } catch (err) {
+    console.error(`[Notes] Could not delete audio for note ${note.id}:`, err.message);
+  }
+
   res.json({ success: true });
 });
 
